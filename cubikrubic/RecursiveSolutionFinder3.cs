@@ -16,7 +16,7 @@ namespace cubikrubic
         readonly int maxThreads;
         readonly Cube3 refCube;
         readonly int maxDepth;
-        volatile int activeThreadCount = 1;
+        int activeThreadCount = 1;
         long combinationCounter = 0;        
 
         public RecursiveSolutionFinder3(Cube3 cube, Action<Cube3, List<string>> print, Func<Cube3, Cube3, bool> eqFunc, int maxDepth, int maxThreads)
@@ -102,7 +102,7 @@ namespace cubikrubic
                         cube.Rotate(moveLetter, moveIdx, count);
                         moves[depth] = ToString(moveLetter, moveIdx, count);
 
-                        if (activeThreadCount < maxThreads)
+                        if (Thread.VolatileRead(ref activeThreadCount) < maxThreads)
                         {                            
                             int newThreadNumber = Interlocked.Increment(ref activeThreadCount);                            
 

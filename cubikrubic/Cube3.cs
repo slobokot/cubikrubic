@@ -10,13 +10,13 @@ namespace cubikrubic
         const int COLORS_X = 9;
         const int COLORS_Y = 12;        
         const int EMPTY = 0;
-        static readonly RotationDescriptor[,] rotationDescriptors;
-        static readonly Dictionary<string, RotationDescriptor> rotationDescriptorsMap;
+        RotationDescriptor[,] rotationDescriptors;
+        Dictionary<string, RotationDescriptor> rotationDescriptorsMap;
 
         int[,] pieces = new int[COLORS_Y, COLORS_X];
         int[,] colors = new int[COLORS_Y, COLORS_X];
 
-        static Cube3()
+        void InitDescriptors()
         {
             rotationDescriptors = new RotationDescriptor[,] {
                 {
@@ -102,6 +102,7 @@ namespace cubikrubic
 
             InitPieces();
             Validate();
+            InitDescriptors();
         }
         
         public Cube3(string data)
@@ -117,6 +118,7 @@ namespace cubikrubic
             }
             InitPieces();
             Validate();
+            InitDescriptors();
         }
         
         public Cube3(Cube3 other)
@@ -136,6 +138,7 @@ namespace cubikrubic
                 }
             }
             Validate();
+            InitDescriptors();
         }
 
         private void InitPieces()
@@ -191,8 +194,8 @@ namespace cubikrubic
 
         #region Rotate function
 
-        static int[] countOneIndexes = new[] { 0, 3, 2, 1 };
-        static int[] countMinusOneIndexes = new[] { 0, 1, 2, 3 };
+        readonly int[] countOneIndexes = new[] { 0, 3, 2, 1 };
+        readonly int[] countMinusOneIndexes = new[] { 0, 1, 2, 3 };
 
         public void Rotate(string name, int count = 1)
         {
