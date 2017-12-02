@@ -13,6 +13,7 @@ namespace cubikrubic
         Func<Cube3, Cube3, bool> eqFunc;
         int threads;
         int depth;
+        object printLock = new object();
 
         public SolutionFinder3(Func<Cube3,Cube3,bool> eqFunc, int threads, int depth)
         {
@@ -76,7 +77,10 @@ namespace cubikrubic
                     int seconds = 10;
                     Thread.Sleep(TimeSpan.FromSeconds(seconds));
                     var newcombinations = finder.Combinations;
-                    Console.WriteLine((newcombinations - combinations) / seconds + " per sec");
+                    lock (printLock)
+                    {
+                        Console.WriteLine((newcombinations - combinations) / seconds + " per sec");
+                    }
                     combinations = newcombinations;
                 }
             }).Start();
@@ -84,38 +88,44 @@ namespace cubikrubic
 
         void PrintSolution(Cube3 cube, List<List<string>> result)
         {
-            if (result != null && result.Count > 0)
+            lock (printLock)
             {
-                Console.WriteLine($"Paths found: {result.Count}");
-                result.Sort((x, y) => x.Count.CompareTo(y.Count));
-                PrintSolution(cube, result[0]);
-            }
-            else
-            {
-                Console.WriteLine("No moves found :(");
+                if (result != null && result.Count > 0)
+                {
+                    Console.WriteLine($"Paths found: {result.Count}");
+                    result.Sort((x, y) => x.Count.CompareTo(y.Count));
+                    PrintSolution(cube, result[0]);
+                }
+                else
+                {
+                    Console.WriteLine("No moves found :(");
+                }
             }
         }
 
         void PrintSolution(Cube3 cube, List<string> result)
         {
-            if (result != null && result.Count > 0)
-            {                                
-                Console.WriteLine();
-                for (int i = 0; i < result.Count; i++)
-                {
-                    Console.Write((i > 0 ? ", " : "") + (i + 1) + ". " + result[i]);
-                }
-                Console.WriteLine();
-                Console.WriteLine();
-                cube = new Cube3(cube);
-                cube.Rotate(result[0]);
-
-                Console.WriteLine(cube.ToStringWithPieces());
-            }
-            else
+            lock (printLock)
             {
-                Console.WriteLine("No moves found :(");
+                if (result != null && result.Count > 0)
+                {
+                    Console.WriteLine();
+                    for (int i = 0; i < result.Count; i++)
+                    {
+                        Console.Write((i > 0 ? ", " : "") + (i + 1) + ". " + result[i]);
+                    }
+                    Console.WriteLine();
+                    Console.WriteLine();
+                    cube = new Cube3(cube);
+                    cube.Rotate(result[0]);
+
+                    Console.WriteLine(cube.ToStringWithPieces());
+                }
+                else
+                {
+                    Console.WriteLine("No moves found :(");
+                }
             }
-        }     
+        }
     }
 }
