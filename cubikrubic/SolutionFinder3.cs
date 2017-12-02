@@ -18,6 +18,7 @@ namespace cubikrubic
         {
             this.eqFunc = eqFunc;
             this.threads = threads;
+            this.depth = depth;
         }
 
         public void FindSolutionWithTimer()
