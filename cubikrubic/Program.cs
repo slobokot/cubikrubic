@@ -12,7 +12,8 @@ namespace cubikrubic
 
             new SolutionFinder3(
                 EqFuncs.SwapEdgeNeighborsEqFunc(), 
-                threads)
+                threads: threads,
+                depth: 10)
                 .FindSolutionWithTimer();
         }
     }

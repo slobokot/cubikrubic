@@ -64,7 +64,7 @@ namespace cubikrubic
             return letterIndexCountStrings[moveLetter - 'a', moveIdx - '1', count - 1];
         }
 
-        List<List<string>> RecursivelyRotateAndCompare(Cube3 cube, char previousMoveLetter, char previousMoveIdx, char beforePreviousMoveLetter, int depth, string[] moves, bool executedInSeparateThread)
+        List<List<string>> RecursivelyRotateAndCompare(Cube3 cube, char prevMoveLetter, char prevMoveIdx, char beforePrevMoveLetter, int depth, string[] moves, bool executedInSeparateThread)
         {            
             Interlocked.Increment(ref combinationCounter);            
             List<List<string>> result = null;
@@ -85,22 +85,21 @@ namespace cubikrubic
 
             for (char moveLetter = 'a'; moveLetter <= 'c'; moveLetter++)
             {
-                if (moveLetter == beforePreviousMoveLetter)
+                if (moveLetter == beforePrevMoveLetter)
                 {
                     continue;
                 }
 
                 for (char moveIdx = '1'; moveIdx <= '2'; moveIdx++)
                 {
-                    if (moveLetter == previousMoveLetter && moveIdx == previousMoveIdx)
+                    if (moveLetter == prevMoveLetter && moveIdx == prevMoveIdx)
                     {
                         continue;
                     }
 
                     for (int count = 1; count <= 3; count++)
                     {
-                        string move = ToString(moveLetter, moveIdx);
-                        cube.Rotate(move, count);
+                        cube.Rotate(moveLetter, moveIdx, count);
                         moves[depth] = ToString(moveLetter, moveIdx, count);
 
                         if (activeThreadCount < maxThreads)
@@ -114,21 +113,21 @@ namespace cubikrubic
                             var cubeClone = new Cube3(cube);
                             var moveLetterClone = moveLetter;
                             var moveIdxClone = moveIdx;
-                            var previousMoveLetterClone = previousMoveLetter;
+                            var prevMoveLetterClone = prevMoveLetter;
                             var movesClone = (string[])moves.Clone();
                             tasks.Add(Task.Run(() =>
                             {
-                                return RecursivelyRotateAndCompare(cubeClone, moveLetterClone, moveIdxClone, previousMoveLetter, depth + 1, movesClone, true);                                
+                                return RecursivelyRotateAndCompare(cubeClone, moveLetterClone, moveIdxClone, prevMoveLetterClone, depth + 1, movesClone, true);                                
                             }));
                         }
                         else
                         {
-                            var resultToAdd = RecursivelyRotateAndCompare(cube, moveLetter, moveIdx, previousMoveLetter, depth + 1, moves, false);
+                            var resultToAdd = RecursivelyRotateAndCompare(cube, moveLetter, moveIdx, prevMoveLetter, depth + 1, moves, false);
                             AccumulateResult(result, resultToAdd);
                         }
 
                         moves[depth] = null;
-                        cube.Rotate(move, -count);
+                        cube.Rotate(moveLetter, moveIdx, -count);
                     }
                 }
             }

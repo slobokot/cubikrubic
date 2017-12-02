@@ -10,7 +10,7 @@ namespace cubikrubic
         const int COLORS_X = 9;
         const int COLORS_Y = 12;        
         const int EMPTY = 0;
-        static readonly RotationDescriptor[] rotationDescriptors;
+        static readonly RotationDescriptor[,] rotationDescriptors;
         static readonly Dictionary<string, RotationDescriptor> rotationDescriptorsMap;
 
         int[,] pieces = new int[COLORS_Y, COLORS_X];
@@ -18,9 +18,10 @@ namespace cubikrubic
 
         static Cube3()
         {
-            rotationDescriptors = new RotationDescriptor[] {
+            rotationDescriptors = new RotationDescriptor[,] {
+                {
                 new RotationDescriptor(
-                    "a1", 
+                    "a1",
                     new XY[][] {
                         new [] { new XY(3,2), new XY(6,3), new XY(5,6), new XY(2,5)},
                         new [] { new XY(4,2), new XY(6,4), new XY(4,6), new XY(2,4)},
@@ -28,11 +29,13 @@ namespace cubikrubic
                         new [] { new XY(3,3), new XY(5,3), new XY(5,5), new XY(3,5)},
                         new [] { new XY(4,3), new XY(5,4), new XY(4,5), new XY(3,4)} }),
                 new RotationDescriptor(
-                    "a2", 
+                    "a2",
                     new XY[][] {
                         new [] { new XY(3,1), new XY(7,3), new XY(5,7), new XY(1,5)},
                         new [] { new XY(4,1), new XY(7,4), new XY(4,7), new XY(1,4)},
-                        new [] { new XY(5,1), new XY(7,5), new XY(3,7), new XY(1,3)}}),
+                        new [] { new XY(5,1), new XY(7,5), new XY(3,7), new XY(1,3)}})
+                },
+                {
                 new RotationDescriptor(
                     "b1",
                     new XY[][] {
@@ -46,7 +49,9 @@ namespace cubikrubic
                     new XY[][] {
                         new [] { new XY(4,2), new XY(4,11), new XY(4,8), new XY(4,5)},
                         new [] { new XY(4,1), new XY(4,10), new XY(4,7), new XY(4,4)},
-                        new [] { new XY(4,0), new XY(4,9), new XY(4,6), new XY(4,3)}}),
+                        new [] { new XY(4,0), new XY(4,9), new XY(4,6), new XY(4,3)}})
+                },
+                {
                 new RotationDescriptor(
                     "c1",
                      new XY[][] {
@@ -61,6 +66,7 @@ namespace cubikrubic
                         new [] { new XY(0,4), new XY(3,4), new XY(6,4), new XY(5,10)},
                         new [] { new XY(1,4), new XY(4,4), new XY(7,4), new XY(4,10)},
                         new [] { new XY(2,4), new XY(5,4), new XY(8,4), new XY(3,10)}})
+                }
             };
             rotationDescriptorsMap = new Dictionary<string, RotationDescriptor>();
             foreach (var r in rotationDescriptors)
@@ -70,7 +76,7 @@ namespace cubikrubic
             ValidateDescriptors(rotationDescriptors);
         }
 
-        private static void ValidateDescriptors(RotationDescriptor[] descriptors)
+        private static void ValidateDescriptors(RotationDescriptor[,] descriptors)
         {
             foreach(var descriptor in descriptors)
             {
@@ -175,7 +181,7 @@ namespace cubikrubic
             foreach (var move in moves)
             {
                 if (move.Length == 4)
-                    Rotate(move.Substring(0, 2), move[3] - '0');
+                    Rotate(move[0], move[1], move[3] - '0');
                 else if (move.Length == 2)
                     Rotate(move);
                 else
@@ -190,14 +196,21 @@ namespace cubikrubic
 
         public void Rotate(string name, int count = 1)
         {
-            var rotationDescriptor = rotationDescriptorsMap[name];
+            Rotate(rotationDescriptorsMap[name], count);
+        }
 
+        public void Rotate(char letter, char idx, int count)
+        {
+            Rotate(rotationDescriptors[letter - 'a', idx - '1'], count);
+        }
+
+        void Rotate(RotationDescriptor rotationDescriptor, int count)
+        { 
             if (count == 2 || count == -2)
             {
                 foreach(var move in rotationDescriptor.MovesList)
                 {
-                    RotateCount2(colors, move);
-                    RotateCount2(pieces, move);
+                    RotateCount2(move);
                 }                
             }
             else
@@ -214,25 +227,39 @@ namespace cubikrubic
 
                 foreach (var move in rotationDescriptor.MovesList)
                 {                    
-                    RotateCountOneOrMinusOne(colors, move, indexes);
-                    RotateCountOneOrMinusOne(pieces, move, indexes);
+                    RotateCountOneOrMinusOne(move, indexes);
                 }                
             }
         }        
 
-        private void RotateCountOneOrMinusOne(int[,] array, XY[] moves, int[] indexes)
+        private void RotateCountOneOrMinusOne(XY[] moves, int[] indexes)
         {
-            int tmp = array[moves[indexes[0]].Y, moves[indexes[0]].X];
-            array[moves[indexes[0]].Y, moves[indexes[0]].X] = array[moves[indexes[1]].Y, moves[indexes[1]].X];
-            array[moves[indexes[1]].Y, moves[indexes[1]].X] = array[moves[indexes[2]].Y, moves[indexes[2]].X];
-            array[moves[indexes[2]].Y, moves[indexes[2]].X] = array[moves[indexes[3]].Y, moves[indexes[3]].X];
-            array[moves[indexes[3]].Y, moves[indexes[3]].X] = tmp;
+            var move0 = moves[indexes[0]];
+            var move1 = moves[indexes[1]];
+            var move2 = moves[indexes[2]];
+            var move3 = moves[indexes[3]];
+            var tmp = colors[move0.Y, move0.X];
+            colors[move0.Y, move0.X] = colors[move1.Y, move1.X];
+            colors[move1.Y, move1.X] = colors[move2.Y, move2.X];
+            colors[move2.Y, move2.X] = colors[move3.Y, move3.X];
+            colors[move3.Y, move3.X] = tmp;
+            tmp = pieces[move0.Y, move0.X];
+            pieces[move0.Y, move0.X] = pieces[move1.Y, move1.X];
+            pieces[move1.Y, move1.X] = pieces[move2.Y, move2.X];
+            pieces[move2.Y, move2.X] = pieces[move3.Y, move3.X];
+            pieces[move3.Y, move3.X] = tmp;
         }
 
-        private void RotateCount2(int[,] array, XY[] moves)
+        private void RotateCount2(XY[] moves)
         {
-            Swap(array, moves[0], moves[2]);
-            Swap(array, moves[1], moves[3]);
+            var move0 = moves[0];
+            var move1 = moves[1];
+            var move2 = moves[2];
+            var move3 = moves[3];
+            Swap(colors, move0, move2);
+            Swap(colors, move1, move3);
+            Swap(pieces, move0, move2);
+            Swap(pieces, move1, move3);
         }
         
 

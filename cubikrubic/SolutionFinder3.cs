@@ -12,8 +12,9 @@ namespace cubikrubic
     {
         Func<Cube3, Cube3, bool> eqFunc;
         int threads;
+        int depth;
 
-        public SolutionFinder3(Func<Cube3,Cube3,bool> eqFunc, int threads)
+        public SolutionFinder3(Func<Cube3,Cube3,bool> eqFunc, int threads, int depth)
         {
             this.eqFunc = eqFunc;
             this.threads = threads;
@@ -54,13 +55,22 @@ namespace cubikrubic
         void FindSolution()
         {
             var refCube = PrepareCubeAndPrint();
+            var finder = new RecursiveSolutionFinder3(refCube, (x,y)=>PrintSolution(x,y), eqFunc, depth, threads);
 
-            var finder = new RecursiveSolutionFinder3(refCube, (x,y)=>PrintSolution(x,y), eqFunc, maxDepth: 11, maxThreads: threads);
+            StartPerformanceCounterThread(finder);
 
+            var result = finder.Run();
+
+            Console.WriteLine("================= FINISHED ============================");
+            Console.WriteLine("Checked " + finder.Combinations + " combinations");            
+        }
+
+        void StartPerformanceCounterThread(RecursiveSolutionFinder3 finder)
+        {
             new Thread(() =>
             {
                 long combinations = 0;
-                for (int i = 0; i < 10; i++)
+                for (int i = 0; i < 3; i++)
                 {
                     int seconds = 10;
                     Thread.Sleep(TimeSpan.FromSeconds(seconds));
@@ -69,13 +79,7 @@ namespace cubikrubic
                     combinations = newcombinations;
                 }
             }).Start();
-
-            var result = finder.Run();
-            Console.WriteLine("================= FINISHED ============================");
-            Console.WriteLine("Checked " + finder.Combinations + " combinations");
-            PrintSolution(refCube, result);
         }
-
 
         void PrintSolution(Cube3 cube, List<List<string>> result)
         {
@@ -98,7 +102,7 @@ namespace cubikrubic
                 Console.WriteLine();
                 for (int i = 0; i < result.Count; i++)
                 {
-                    Console.Write((i > 0 ? ", " : "") + (i + 1) + ". " + result[0][i]);
+                    Console.Write((i > 0 ? ", " : "") + (i + 1) + ". " + result[i]);
                 }
                 Console.WriteLine();
                 Console.WriteLine();
