@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace cubikrubic
 {
@@ -193,10 +194,10 @@ namespace cubikrubic
 
             if (count == 2 || count == -2)
             {
-                for (int r = 0; r < rotationDescriptor.MovesList.Length; r++)
-                {                    
-                    RotateCount2(colors,rotationDescriptor.MovesList[r]);
-                    RotateCount2(pieces,rotationDescriptor.MovesList[r]);
+                foreach(var move in rotationDescriptor.MovesList)
+                {
+                    RotateCount2(colors, move);
+                    RotateCount2(pieces, move);
                 }                
             }
             else
@@ -209,16 +210,14 @@ namespace cubikrubic
                 {
                     count = 1;
                 }
-                int[] indexes = count == 1 ? countOneIndexes : countMinusOneIndexes;
+                var indexes = count == 1 ? countOneIndexes : countMinusOneIndexes;
 
-                for (int r = 0; r < rotationDescriptor.MovesList.Length; r++)
+                foreach (var move in rotationDescriptor.MovesList)
                 {                    
-                    RotateCountOneOrMinusOne(colors,rotationDescriptor.MovesList[r], indexes);
-                    RotateCountOneOrMinusOne(pieces, rotationDescriptor.MovesList[r], indexes);
+                    RotateCountOneOrMinusOne(colors, move, indexes);
+                    RotateCountOneOrMinusOne(pieces, move, indexes);
                 }                
             }
-
-            Validate();
         }        
 
         private void RotateCountOneOrMinusOne(int[,] array, XY[] moves, int[] indexes)
@@ -423,6 +422,27 @@ namespace cubikrubic
             {
                 return $"{X},{Y}";
             }
+        }
+
+        public static IEnumerable<XY> MaskToPoints(int[,] mask)
+        {
+            var agg = new Dictionary<int, XY>();
+            var cube = new Cube3();
+            for (var y = 0; y < mask.GetLength(0); y++)
+            {
+                for (var x = 0; x < mask.GetLength(1); x++)
+                {
+                    if (mask[y, x] == 1)
+                    {
+                        if (!agg.ContainsKey(cube.Pieces[y, x]))
+                        {
+                            agg.Add(cube.Pieces[y, x], new XY(x, y));
+                        }
+                    }
+                }
+            }
+
+            return agg.Values.ToArray();
         }
 
         private struct RotationDescriptor
