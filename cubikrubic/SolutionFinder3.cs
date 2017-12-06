@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -10,16 +11,31 @@ namespace cubikrubic
 {
     class SolutionFinder3
     {
-        Func<Cube3, Cube3, bool> eqFunc;
-        int threads;
-        int depth;
-        object printLock = new object();
+        readonly Func<Cube3, Cube3, bool> eqFunc;
+        readonly int threads;
+        readonly int depth;
+        readonly string resultFile;
+        readonly string[] startMoves;
+        readonly object printLock = new object();
 
-        public SolutionFinder3(Func<Cube3,Cube3,bool> eqFunc, int threads, int depth)
+        public SolutionFinder3(Func<Cube3,Cube3,bool> eqFunc, int threads, int depth, string resultFile)
         {
             this.eqFunc = eqFunc;
             this.threads = threads;
             this.depth = depth;
+            this.resultFile = resultFile;
+            this.startMoves = null;
+            if (threads > 1)
+                GetResultFileWaitHandle();
+        }
+
+        public SolutionFinder3(Func<Cube3, Cube3, bool> eqFunc, string[] startMoves, int depth, string resultFile)
+        {
+            this.eqFunc = eqFunc;
+            this.threads = -1;
+            this.depth = depth;
+            this.startMoves = startMoves;
+            this.resultFile = resultFile;
         }
 
         public void FindSolutionWithTimer()
@@ -57,11 +73,15 @@ namespace cubikrubic
         void FindSolution()
         {
             var refCube = PrepareCubeAndPrint();
-            var finder = new RecursiveSolutionFinder3(refCube, (x,y)=>PrintSolution(x,y), eqFunc, depth, threads);
+            if (startMoves != null)
+            {
+                refCube.Rotate(startMoves);
+            }
+            var finder = new RecursiveSolutionFinder3(refCube, (x,y)=>PrintSolution(x,y), eqFunc, depth, threads, startMoves);
 
             StartPerformanceCounterThread(finder);
 
-            var result = finder.Run();
+            finder.Run();
 
             Console.WriteLine("================= FINISHED ============================");
             Console.WriteLine("Checked " + finder.Combinations + " combinations");            
@@ -86,46 +106,52 @@ namespace cubikrubic
             }).Start();
         }
 
-        void PrintSolution(Cube3 cube, List<List<string>> result)
+        void PrintSolution(Cube3 cube, IEnumerable<string> result)
         {
-            lock (printLock)
+            var writer = new StringWriter();
+            if (result != null && result.Any())
             {
-                if (result != null && result.Count > 0)
-                {
-                    Console.WriteLine($"Paths found: {result.Count}");
-                    result.Sort((x, y) => x.Count.CompareTo(y.Count));
-                    PrintSolution(cube, result[0]);
-                }
-                else
-                {
-                    Console.WriteLine("No moves found :(");
-                }
+                writer.WriteLine();
+                PrintMoves(result, writer);
+                writer.WriteLine();
+                cube = new Cube3(cube);
+                cube.Rotate(result);
+
+                writer.WriteLine(cube.ToStringWithPieces());
             }
+            else
+            {
+                writer.WriteLine("No moves found :(");
+            }
+
+            var handle = GetResultFileWaitHandle();
+            handle.WaitOne();
+            File.AppendAllText(resultFile, writer.ToString());
+            handle.Set();
         }
 
-        void PrintSolution(Cube3 cube, List<string> result)
+        public static void PrintMoves(IEnumerable<string> moves)
         {
-            lock (printLock)
-            {
-                if (result != null && result.Count > 0)
-                {
-                    Console.WriteLine();
-                    for (int i = 0; i < result.Count; i++)
-                    {
-                        Console.Write((i > 0 ? ", " : "") + (i + 1) + ". " + result[i]);
-                    }
-                    Console.WriteLine();
-                    Console.WriteLine();
-                    cube = new Cube3(cube);
-                    cube.Rotate(result[0]);
+            PrintMoves(moves, Console.Out);
+        }
 
-                    Console.WriteLine(cube.ToStringWithPieces());
-                }
-                else
-                {
-                    Console.WriteLine("No moves found :(");
-                }
+        public static void PrintMoves(IEnumerable<string> moves, TextWriter writer)
+        {
+            int i = 1;
+            foreach (var move in moves)
+            {
+                if (move == null)
+                    break;
+                writer.Write((i > 1 ? ", " : "") + i + ". " + move);
+                i++;
             }
+
+            writer.WriteLine();
+        }
+
+        EventWaitHandle GetResultFileWaitHandle()
+        {
+            return new EventWaitHandle(true, EventResetMode.AutoReset, "CubikRubicFile"); ;
         }
     }
 }

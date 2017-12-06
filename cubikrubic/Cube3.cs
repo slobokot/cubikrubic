@@ -11,7 +11,6 @@ namespace cubikrubic
         const int COLORS_Y = 12;        
         const int EMPTY = 0;
         RotationDescriptor[,] rotationDescriptors;
-        Dictionary<string, RotationDescriptor> rotationDescriptorsMap;
 
         int[,] pieces = new int[COLORS_Y, COLORS_X];
         int[,] colors = new int[COLORS_Y, COLORS_X];
@@ -68,11 +67,6 @@ namespace cubikrubic
                         new [] { new XY(2,4), new XY(5,4), new XY(8,4), new XY(3,10)}})
                 }
             };
-            rotationDescriptorsMap = new Dictionary<string, RotationDescriptor>();
-            foreach (var r in rotationDescriptors)
-            {
-                rotationDescriptorsMap.Add(r.Name, r);
-            }
             ValidateDescriptors(rotationDescriptors);
         }
 
@@ -163,11 +157,6 @@ namespace cubikrubic
         public int[,] Pieces { get { return pieces; } }
         public int[,] Colors { get { return colors; } }
 
-        public IEnumerable<string> RotationNames
-        {
-            get { return rotationDescriptorsMap.Keys; }
-        }
-
         private void Fill(int x1, int y1, int value, int[,] array)
         {
             for (int x = x1; x <= x1 + 2; x++)
@@ -199,7 +188,7 @@ namespace cubikrubic
 
         public void Rotate(string name, int count = 1)
         {
-            Rotate(rotationDescriptorsMap[name], count);
+            Rotate(name[0], name[1], count);
         }
 
         public void Rotate(char letter, char idx, int count)
@@ -211,9 +200,9 @@ namespace cubikrubic
         { 
             if (count == 2 || count == -2)
             {
-                foreach(var move in rotationDescriptor.MovesList)
+                for (var i = 0 ; i < rotationDescriptor.MovesList.Length; i++)
                 {
-                    RotateCount2(move);
+                    RotateCount2(rotationDescriptor.MovesList[i]);
                 }                
             }
             else
@@ -228,12 +217,12 @@ namespace cubikrubic
                 }
                 var indexes = count == 1 ? countOneIndexes : countMinusOneIndexes;
 
-                foreach (var move in rotationDescriptor.MovesList)
+                for (var i = 0; i < rotationDescriptor.MovesList.Length; i++)
                 {                    
-                    RotateCountOneOrMinusOne(move, indexes);
+                    RotateCountOneOrMinusOne(rotationDescriptor.MovesList[i], indexes);
                 }                
             }
-        }        
+        }
 
         private void RotateCountOneOrMinusOne(XY[] moves, int[] indexes)
         {
@@ -259,20 +248,21 @@ namespace cubikrubic
             var move1 = moves[1];
             var move2 = moves[2];
             var move3 = moves[3];
-            Swap(colors, move0, move2);
-            Swap(colors, move1, move3);
-            Swap(pieces, move0, move2);
-            Swap(pieces, move1, move3);
+            Swap(move0, move2);
+            Swap(move1, move3);
         }
         
 
         #endregion        
 
-        private void Swap(int[,] array, XY a, XY b)
+        private void Swap(XY a, XY b)
         {
-            int tmp = array[a.Y, a.X];
-            array[a.Y, a.X] = array[b.Y, b.X];
-            array[b.Y, b.X] = tmp;
+            var tmp = colors[a.Y, a.X];
+            colors[a.Y, a.X] = colors[b.Y, b.X];
+            colors[b.Y, b.X] = tmp;
+            tmp = pieces[a.Y, a.X];
+            pieces[a.Y, a.X] = pieces[b.Y, b.X];
+            pieces[b.Y, b.X] = tmp;
         }
 
         private void Validate()
@@ -382,20 +372,21 @@ namespace cubikrubic
             return ArrayEqualsUsingMask(colors, other.colors, mask);
         }
 
-        public bool EqualsColors(Cube3 other, IEnumerable<XY> points)
+        public bool EqualsColors(Cube3 other, XY[] points)
         {
             return ArrayEqualsUsingPoints(colors, other.colors, points);
         }
 
-        public bool EqualsPieces(Cube3 other, IEnumerable<XY> points)
+        public bool EqualsPieces(Cube3 other, XY[] points)
         {
             return ArrayEqualsUsingPoints(pieces, other.pieces, points);
         }
 
-        private bool ArrayEqualsUsingPoints(int[,] a, int[,] b, IEnumerable<XY> points)
+        private bool ArrayEqualsUsingPoints(int[,] a, int[,] b, XY[] points)
         {
-            foreach (var point in points)
+            for (int i = 0; i < points.Length; i++)
             {
+                var point = points[i];
                 if (a[point.Y, point.X] != b[point.Y, point.X])
                     return false;
             }
@@ -454,7 +445,7 @@ namespace cubikrubic
             }
         }
 
-        public static IEnumerable<XY> MaskToPoints(int[,] mask)
+        public static XY[] MaskToPoints(int[,] mask)
         {
             var agg = new Dictionary<int, XY>();
             var cube = new Cube3();
