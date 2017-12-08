@@ -9,7 +9,8 @@ namespace cubikrubic
         {
             int depth = 10;
             var eqFunc = EqFuncs.SwapEdgeNeighborsEqFunc();
-            var resultFile = "c:\cubikrubik.txt";
+            //var eqFunc = EqFuncs.AlwaysTrue();
+            var resultFile = @"d:\cubikrubik.txt";
 
             if (args.Length > 0 && args[0] == "--child")
             {

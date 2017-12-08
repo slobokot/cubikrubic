@@ -172,6 +172,8 @@ namespace cubikrubic
         {
             foreach (var move in moves)
             {
+                if (move == null)
+                    break;
                 if (move.Length == 4)
                     Rotate(move[0], move[1], move[3] - '0');
                 else if (move.Length == 2)
@@ -445,7 +447,7 @@ namespace cubikrubic
             }
         }
 
-        public static XY[] MaskToPoints(int[,] mask)
+        public static XY[] PiecesMaskToPoints(int[,] mask)
         {
             var agg = new Dictionary<int, XY>();
             var cube = new Cube3();
@@ -464,6 +466,23 @@ namespace cubikrubic
             }
 
             return agg.Values.ToArray();
+        }
+
+        public static XY[] ColorsMaskToPoints(int[,] mask)
+        {
+            var agg = new List<XY>();
+            for (var y = 0; y < mask.GetLength(0); y++)
+            {
+                for (var x = 0; x < mask.GetLength(1); x++)
+                {
+                    if (mask[y, x] == 1)
+                    {
+                        agg.Add(new XY(x, y));
+                    }
+                }
+            }
+
+            return agg.ToArray();
         }
 
         private struct RotationDescriptor

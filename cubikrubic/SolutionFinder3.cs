@@ -17,6 +17,7 @@ namespace cubikrubic
         readonly string resultFile;
         readonly string[] startMoves;
         readonly object printLock = new object();
+        bool running;
 
         public SolutionFinder3(Func<Cube3,Cube3,bool> eqFunc, int threads, int depth, string resultFile)
         {
@@ -73,10 +74,6 @@ namespace cubikrubic
         void FindSolution()
         {
             var refCube = PrepareCubeAndPrint();
-            if (startMoves != null)
-            {
-                refCube.Rotate(startMoves);
-            }
             var finder = new RecursiveSolutionFinder3(refCube, (x,y)=>PrintSolution(x,y), eqFunc, depth, threads, startMoves);
 
             StartPerformanceCounterThread(finder);
@@ -89,6 +86,9 @@ namespace cubikrubic
 
         void StartPerformanceCounterThread(RecursiveSolutionFinder3 finder)
         {
+            if (threads > 1)
+                return;
+
             new Thread(() =>
             {
                 long combinations = 0;
@@ -111,7 +111,7 @@ namespace cubikrubic
             var writer = new StringWriter();
             if (result != null && result.Any())
             {
-                writer.WriteLine();
+                writer.WriteLine("Moves:");
                 PrintMoves(result, writer);
                 writer.WriteLine();
                 cube = new Cube3(cube);
@@ -124,10 +124,22 @@ namespace cubikrubic
                 writer.WriteLine("No moves found :(");
             }
 
-            var handle = GetResultFileWaitHandle();
-            handle.WaitOne();
-            File.AppendAllText(resultFile, writer.ToString());
-            handle.Set();
+            while (true)
+            {
+                try
+                {
+                    using (var file = new StreamWriter(File.Open(resultFile, FileMode.Append, FileAccess.Write, FileShare.Read)))
+                    {
+                        file.Write(writer.ToString());
+                    }
+                    break;
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    Thread.Sleep(10);
+                }
+            }
         }
 
         public static void PrintMoves(IEnumerable<string> moves)

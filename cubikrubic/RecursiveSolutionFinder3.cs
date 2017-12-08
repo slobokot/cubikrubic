@@ -17,15 +17,16 @@ namespace cubikrubic
         readonly int maxThreads;
         readonly Cube3 refCube;
         readonly string[] moves;
-        int activeThreadCount = 1;
+        readonly Cube3 startCube;
         long combinationCounter = 0;
 
-        public RecursiveSolutionFinder3(Cube3 cube, Action<Cube3, IEnumerable<string>> print, Func<Cube3, Cube3, bool> eqFunc, int maxDepth, int maxThreads, string[] moves = null)
+        public RecursiveSolutionFinder3(Cube3 refCube, Action<Cube3, IEnumerable<string>> print, Func<Cube3, Cube3, bool> eqFunc, int maxDepth, int maxThreads, string[] moves = null)
         {
             this.print = print;
             this.eqFunc = eqFunc;
             this.maxThreads = maxThreads;
-            this.refCube = new Cube3(cube);
+            this.refCube = new Cube3(refCube);
+            
             this.moves = new string[maxDepth];
             if (moves !=null)
             {
@@ -90,6 +91,7 @@ namespace cubikrubic
                         var argument = argumentList[0];
                         argumentList.RemoveAt(0);
                         processList.Add(Process.Start("cubikrubic.exe", argument));
+                        Console.WriteLine($"Launched: {argument}");
                     }
 
                     while(processList.Count == maxThreads)
@@ -103,13 +105,15 @@ namespace cubikrubic
                             }
                         }
                         if (processList.Count == maxThreads)
-                            Thread.Sleep(TimeSpan.FromSeconds(5));
+                            Thread.Sleep(TimeSpan.FromSeconds(1));
                     }
                 }
             }
             else
-            {                
-                RecursivelyRotateAndCompare(new Cube3(refCube), '-', '-', startDepth, moves);
+            {
+                var cube = new Cube3(refCube);
+                cube.Rotate(moves);
+                RecursivelyRotateAndCompare(cube, '-', '-', startDepth, moves);
             }
         }
 
@@ -125,7 +129,6 @@ namespace cubikrubic
 
         void RecursivelyRotateAndCompare(Cube3 cube, char prevMoveLetter, char prevMoveIdx, int depth, string[] moves)
         {            
-
             Interlocked.Increment(ref combinationCounter);
 
             if (eqFunc(cube, refCube))
